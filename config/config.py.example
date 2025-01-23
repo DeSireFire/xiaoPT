@@ -1,0 +1,28 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# Author    : RaXianch
+# CreatDATE : 2025/1/17
+# CreatTIME : 11:28
+# Blog      : https://blog.raxianch.moe/
+# Github    : https://github.com/DeSireFire
+__author__ = 'RaXianch'
+# 配置文件
+import os
+from config import mteam, qb
+
+# 项目路径
+root_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# 下载器
+qb.qb_url = '192.168.9.173:58080'
+qb.user = 'admin'
+qb.pwd = 'admin123'
+
+# 站点登录态配置
+# 馒头
+mteam.headers = {
+    'accept': 'application/json, text/plain, */*',
+    'accept-language': 'zh-CN,zh;q=0.9',
+    'x-api-key': '你的馒头key,获取再主页->控制台->实验室',
+    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+}
