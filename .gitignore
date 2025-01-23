@@ -169,3 +169,7 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+/config.py
+/crawl_compose/demo.py
+/config/config.py
+/data/hashes.txt
