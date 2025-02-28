@@ -14,11 +14,11 @@ from pprint import pprint
 
 import jsonpath
 import requests
-
+from datetime import datetime, timedelta
 from crawler import BaseSiteSpider
 from config.config import mteam, root_path
 
-
+# api.m-team.cc/api/torrent/genDlToken
 class mteamCrawler(BaseSiteSpider):
     NAME = "M-Team"
     HOST = "api.m-team.cc"
@@ -113,22 +113,73 @@ class mteamCrawler(BaseSiteSpider):
         data = raw_list.get("data", {}).get("data", {})
         free_data = []
         for d in data:
-            # mallSingleFree = d["status"]["mallSingleFree"]
-            # if mallSingleFree:
+            # toppingLevel = d["status"]["toppingLevel"]
+            # size = d["size"] or 0
+            # size_GB = int(size) / (1024**3)
+            # if size_GB and 0 < size_GB < 10 and self._is_free_torrent(d):
             #     free_data.append(d)
-            toppingLevel = d["status"]["toppingLevel"]
-            size = d["size"] or 0
-            size_GB = int(size) / (1024**3)
-            if size_GB and 0 < size_GB < 10 and self._is_free_torrent(d):
+            if self._rawlist_filter(d):
                 free_data.append(d)
             else:
-                print(f"no free: {d['smallDescr']}")
+                # print(f"no free: {d['smallDescr']}")
                 continue
-
-
-
-
         return free_data
+
+    def _rawlist_filter(self, d):
+
+        size = d["size"] or 0
+        # 筛选大小， 单位 GB
+        size_GB = int(size) / (1024 ** 3)
+        status = d.get("status")
+        try:
+            if any([
+                size,  # 是否存在大小
+                status,  # 是否存在大小
+                0 < size_GB < 10,  # 大小小于10GB
+                self._is_free_torrent(d),  # 是否为免费资源
+                self.is_seeders_greater_than_leechers(status["seeders"], status["leechers"], 1),  # 做种>下载3倍的不要
+                # todo mallSingleFree为None的资源中有免费资源，判断方式待定
+                # self.is_end_date_within_10_hours(status.get('mallSingleFree', {}).get('endDate')),  # 免费时长不到10小时跳过
+
+            ]):
+                return True
+            else:
+                return False
+        except Exception as e:
+            return False
+
+    def is_seeders_greater_than_leechers(self, seeders, leechers, threshold=2):
+        """
+        判断seeders是否远大于leechers。
+
+        :param seeders: 种子用户数量
+        :param leechers: 下载用户数量
+        :param threshold: 阈值，表示seeders数量需要超过leechers数量的倍数
+        :return: 如果seeders远大于leechers，则返回True，否则返回False
+        """
+        if 0 < int(seeders) < 10:
+            return True
+
+        if int(leechers) == 0:  # 避免除以零的错误
+            return True if 0 < int(seeders) < 3 else False
+        # print(int(seeders) / int(leechers))
+        return int(seeders) / int(leechers) <= int(threshold)
+
+
+    def is_end_date_within_10_hours(self, end_date_str):
+        """
+        判断提供的结束日期是否距离现在不到10个小时。
+
+        :param end_date_str: 结束日期的字符串表示，格式应为 "YYYY-MM-DD HH:MM:SS"
+        :return: 如果结束日期距离现在不到10个小时，则返回False，否则返回True
+        """
+        if not end_date_str:
+            return False
+        end_date = datetime.strptime(end_date_str, "%Y-%m-%d %H:%M:%S")
+        current_date = datetime.now()
+        time_difference = end_date - current_date
+        return time_difference > timedelta(hours=10)
+
 
     def get_torrent_link(self, torrent_id: str) -> str:
         """
@@ -140,7 +191,7 @@ class mteamCrawler(BaseSiteSpider):
         files = {
             'id': (None, f'{torrent_id}'),
         }
-        url = f'https://api.m-team.cc/{self.TORRENT_API}'
+        url = f'https://{self.HOST}/{self.TORRENT_API}'
         response1 = requests.post(url=url, headers=headers, files=files)
 
         torrent_url = response1.json().get("data")
@@ -201,6 +252,8 @@ class mteamCrawler(BaseSiteSpider):
         """
         # 获取原始数据
         raw_list = self.torrent_rawlist_crawler() or {}
+        if not raw_list:
+            return
         # 筛选
         clear_list = self.rawlist_cleaner(raw_list)
         # pprint(clear_list)
@@ -222,5 +275,8 @@ class mteamCrawler(BaseSiteSpider):
 
 if __name__ == '__main__':
     obj = mteamCrawler(cookie={}, headers=[])
-    turls = obj.crawler()
+    # turls = obj.crawler()
     # print(root_path)
+
+    t = obj.is_seeders_greater_than_leechers(164, 38, 2)
+    print(t)

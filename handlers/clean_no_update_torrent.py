@@ -10,7 +10,7 @@ __author__ = 'RaXianch'
 import os
 import shutil
 
-from handlers import qb_client
+from handlers import qb_client, jobs_clean_torrent
 from datetime import datetime, timedelta
 
 
@@ -68,6 +68,10 @@ def clean_torrent(delete_incomplete=True):
     清理种子主程
     :return:
     """
+    print("即将执行种子清理操作...")
+    if not jobs_clean_torrent:
+        print("当前已关闭种子清理任务，不执行清理操作...")
+        return
 
     # 获取需要清理种子
     wait_clean_torrents = get_torrents_with_no_upload_in_24_hours() or []

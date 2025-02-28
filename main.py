@@ -22,7 +22,7 @@ def main():
     # 新增种子任务
     scheduler.add_job(tasks.add_torrent_jobs, "interval", minutes=15, next_run_time=datetime.now() + timedelta(seconds=10))
     # 清理种子任务（不需要就注释）
-    scheduler.add_job(tasks.clean_torrent, "interval", hours=24)
+    scheduler.add_job(tasks.clean_torrent, "interval", hours=1, next_run_time=datetime.now() + timedelta(seconds=10))
     print(f"开始运行，稍后你可以在日志文件中查看日志，观察运行情况...")
     scheduler.start()
 

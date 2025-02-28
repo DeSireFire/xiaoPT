@@ -14,17 +14,19 @@ def add_torrent_jobs():
     获取新一批种子任务
     :return:
     """
-
+    try:
     # 馒头
-    turls = mtc.crawler()
-    if not turls:
-        return
-    callback_res = qb_client.qb.torrents_add(
-        urls="\r\n".join(turls),
-        category="xiaoPT",
-        use_auto_torrent_management=True,
-    )
-    print(f"种子任务添加：{callback_res}")
+        turls = mtc.crawler()
+        if not turls:
+            return
+        callback_res = qb_client.qb.torrents_add(
+            urls="\r\n".join(turls),
+            category="xiaoPT",
+            use_auto_torrent_management=True,
+        )
+        print(f"种子任务添加：{callback_res}")
+    except Exception as e:
+        print(f"任务添加时，发生了错误。Traceback:{e}")
 
 
 
