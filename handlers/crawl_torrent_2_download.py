@@ -21,7 +21,7 @@ def add_torrent_jobs():
             return
         callback_res = qb_client.qb.torrents_add(
             urls="\r\n".join(turls),
-            category="xiaoPT",
+            category="xiaoPT_mt_brush",
             use_auto_torrent_management=True,
         )
         print(f"种子任务添加：{callback_res}")
