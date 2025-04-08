@@ -32,9 +32,12 @@ def main():
     scheduler = BlockingScheduler(
         executors=executors, job_defaults=job_defaults)
 
+    # 首次运行
+    tasks.add_torrent_jobs(list(range(1, 10)))
+
     try:
         # 新增种子任务，每15分钟执行一次
-        scheduler.add_job(tasks.add_torrent_jobs, "interval", minutes=5)
+        scheduler.add_job(tasks.add_torrent_jobs, "interval", minutes=5, kwargs={"pages": list(range(1, 3))})
         # 新增种子任务
         # scheduler.add_job(tasks.add_torrent_jobs, "interval", minutes=15,
         #                   next_run_time=datetime.now() + timedelta(seconds=10))
@@ -62,4 +65,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-    # tasks.add_torrent_jobs()
+    # tasks.add_torrent_jobs(list(range(1, 10)))

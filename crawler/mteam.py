@@ -25,77 +25,77 @@ class mteamCrawler(BaseSiteSpider):
     HOST = "api.m-team.cc"
     SEARCH_API = "api/torrent/search"
     TORRENT_API = "api/torrent/genDlToken"
-    PAGE_SIZE = 200
+    PAGE_SIZE = 100
     BODYS = [
-        # 电影最新
-        {
-            "categories": [],
-            "mode": "movie",
-            "visible": 1,
-            "pageNumber": 1,
-            "pageSize": PAGE_SIZE,
-            "sortDirection": "DESC",
-            "sortField": "CREATED_DATE",
-        },
-        # 成人最新
-        {
-            "categories": [],
-            "mode": "adult",
-            "visible": 1,
-            "pageNumber": 1,
-            "pageSize": PAGE_SIZE,
-            "sortDirection": "DESC",
-            "sortField": "CREATED_DATE",
-        },
-        # 电视最新
-        {
-            "categories": [],
-            "mode": "tvshow",
-            "visible": 1,
-            "pageNumber": 1,
-            "pageSize": PAGE_SIZE,
-            "sortDirection": "DESC",
-            "sortField": "CREATED_DATE",
-        },
-        # 综合最新
-        {
-            "categories": [],
-            "mode": "normal",
-            "visible": 1,
-            "pageNumber": 1,
-            "pageSize": PAGE_SIZE,
-            "sortDirection": "DESC",
-            "sortField": "CREATED_DATE",
-        },
-        # 排行榜 下载数最多
-        {
-            "categories": [],
-            "mode": "rankings",
-            "visible": 1,
-            "pageNumber": 1,
-            "pageSize": PAGE_SIZE,
-            "sortDirection": "DESC",
-            "sortField": "LEECHERS",
-        },
-        # 馒头官种 动漫列表 文件大小从小到大排序
-        {
-            'mode': 'normal',
-            'categories': [
-                '405',
-                '434',
-            ],
-            'teams': [
-                '44',
-                '9',
-                '43',
-            ],
-            'discount': 'FREE',
-            'visible': 1,
-            'sortDirection': 'ASC',
-            'sortField': 'SIZE',
-            'pageNumber': 1,
-            'pageSize': 100,
-        },
+        # # 电影最新
+        # {
+        #     "categories": [],
+        #     "mode": "movie",
+        #     "visible": 1,
+        #     "pageNumber": 1,
+        #     "pageSize": PAGE_SIZE,
+        #     "sortDirection": "DESC",
+        #     "sortField": "CREATED_DATE",
+        # },
+        # # 成人最新
+        # {
+        #     "categories": [],
+        #     "mode": "adult",
+        #     "visible": 1,
+        #     "pageNumber": 1,
+        #     "pageSize": PAGE_SIZE,
+        #     "sortDirection": "DESC",
+        #     "sortField": "CREATED_DATE",
+        # },
+        # # 电视最新
+        # {
+        #     "categories": [],
+        #     "mode": "tvshow",
+        #     "visible": 1,
+        #     "pageNumber": 1,
+        #     "pageSize": PAGE_SIZE,
+        #     "sortDirection": "DESC",
+        #     "sortField": "CREATED_DATE",
+        # },
+        # # 综合最新
+        # {
+        #     "categories": [],
+        #     "mode": "normal",
+        #     "visible": 1,
+        #     "pageNumber": 1,
+        #     "pageSize": PAGE_SIZE,
+        #     "sortDirection": "DESC",
+        #     "sortField": "CREATED_DATE",
+        # },
+        # # 排行榜 下载数最多
+        # {
+        #     "categories": [],
+        #     "mode": "rankings",
+        #     "visible": 1,
+        #     "pageNumber": 1,
+        #     "pageSize": PAGE_SIZE,
+        #     "sortDirection": "DESC",
+        #     "sortField": "LEECHERS",
+        # },
+        # # 馒头官种 动漫列表 文件大小从小到大排序
+        # {
+        #     'mode': 'normal',
+        #     'categories': [
+        #         '405',
+        #         '434',
+        #     ],
+        #     'teams': [
+        #         '44',
+        #         '9',
+        #         '43',
+        #     ],
+        #     'discount': 'FREE',
+        #     'visible': 1,
+        #     'sortDirection': 'ASC',
+        #     'sortField': 'SIZE',
+        #     'pageNumber': 1,
+        #     'pageSize': 100,
+        # },
         # 馒头官种 文件大小从小到大排序
         {
             'mode': 'normal',
@@ -111,11 +111,12 @@ class mteamCrawler(BaseSiteSpider):
             'sortField': 'SIZE',
             'pageNumber': 1,
             'pageSize': 100,
-        }
+        },
+
     ]
     base_headers = mteam.headers
 
-    def torrent_rawlist_crawler(self):
+    def torrent_rawlist_crawler(self, page):
         """
         获取目标网站的列表
         :return:
@@ -133,7 +134,7 @@ class mteamCrawler(BaseSiteSpider):
         #     'pageSize': 100,
         # }
         json_data = self.BODYS[-1]
-
+        json_data["pageNumber"] = page
         response = self.fetch(
             method="POST",
             url=f"https://{self.HOST}/{self.SEARCH_API}",
@@ -170,7 +171,7 @@ class mteamCrawler(BaseSiteSpider):
         size_MB = int(size) / (1024 ** 2)
         status = d.get("status")
         try:
-            if any([
+            if all([
                 size,  # 是否存在大小
                 status,  # 是否存在大小
                 # 0 < size_GB < 10,  # 大小小于10GB
@@ -400,17 +401,25 @@ class mteamCrawler(BaseSiteSpider):
 
         return res_list
 
-    def crawler(self, ):
+    def crawler(self, pages=None):
         """
         采集组件主程
         :return:
         """
-        # 获取原始数据
-        raw_list = self.torrent_rawlist_crawler() or {}
-        if not raw_list:
+        if pages is None:
+            pages = [1]
+        clear_list = []
+        for page in pages:
+            # 获取原始数据
+            print(f"获取第{page}页数据...")
+            raw_list = self.torrent_rawlist_crawler(page) or {}
+            if not raw_list:
+                continue
+            # 筛选
+            clear_list += self.rawlist_cleaner(raw_list)
+        if not clear_list:
             return
-        # 筛选
-        clear_list = self.rawlist_cleaner(raw_list)
+
         # pprint(clear_list)
         # 获取id
         rtids = [c["status"]["id"] for c in clear_list]
